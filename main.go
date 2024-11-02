@@ -23,8 +23,14 @@ func main() {
 	app := NewApp()
 
 	app.echo.Use(middleware.Logger())
-
 	app.echo.Use(app.storeLinker)
+
+	// set cors
+	app.echo.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{http.MethodGet, http.MethodPost},
+	}))
+
 	app.echo.GET("/:short", retrieveLink)
 	app.echo.POST("/shorten", shortenLink)
 
