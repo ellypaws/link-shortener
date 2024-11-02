@@ -1,6 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App.tsx';
 import '@/styles/globals.css';
 import LinkShortener from "@/components/link-shortener.tsx";
 import {Toaster} from "@/components/ui/toaster.tsx";

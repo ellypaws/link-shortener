@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"link-shortener/links"
 	"net/http"
+	"path/filepath"
 )
 
 type App struct {
@@ -31,6 +32,7 @@ func main() {
 		AllowMethods: []string{http.MethodGet, http.MethodPost},
 	}))
 
+	app.echo.GET("/", index)
 	app.echo.GET("/:short", retrieveLink)
 	app.echo.POST("/shorten", shortenLink)
 
@@ -44,7 +46,23 @@ func (app App) storeLinker(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func index(c echo.Context) error {
+	return c.File("app/dist/index.html")
+}
+
+func returnFile(file string) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		return c.File("app/dist/" + file)
+	}
+}
+
 func retrieveLink(c echo.Context) error {
+	base := filepath.Base(c.Request().URL.Path)
+	switch filepath.Ext(base) {
+	case ".css", ".js", ".ico":
+		return returnFile(c.Request().URL.Path)(c)
+	}
+
 	short := c.Param("short")
 	linker, ok := c.Get("linker").(*links.Linker)
 	if !ok {
