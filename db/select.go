@@ -73,9 +73,7 @@ func (db *Sqlite) SelectLink(short string) (*links.ShortLink, error) {
 	}
 
 	if dateCreated != nil {
-		// time format is 2024-11-03 15:55:51.7475745 +0000 UTC
-		const format = "2006-01-02 15:04:05.9999999 -0700 MST"
-		link.DateCreated, err = time.Parse(format, *dateCreated)
+		link.DateCreated, err = time.Parse(time.RFC3339, *dateCreated)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse date_created: %w", err)
 		}

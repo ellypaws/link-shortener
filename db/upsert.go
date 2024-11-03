@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"link-shortener/links"
+	"time"
 )
 
 const (
@@ -52,7 +53,7 @@ func (db *Sqlite) UpsertLink(link *links.ShortLink) error {
 			link.Short,
 			link.Original,
 			link.Owner.Username,
-			link.DateCreated.UTC(),
+			link.DateCreated.UTC().Format(time.RFC3339),
 			nil,
 		)
 		return fmt.Errorf("failed to upsert link: %w", err)
@@ -63,7 +64,7 @@ func (db *Sqlite) UpsertLink(link *links.ShortLink) error {
 		link.Short,
 		link.Original,
 		nil,
-		link.DateCreated.UTC(),
+		link.DateCreated.UTC().Format(time.RFC3339),
 		nil,
 	)
 	return err
