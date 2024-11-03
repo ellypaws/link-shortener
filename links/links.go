@@ -21,7 +21,7 @@ func NewLinker() *Linker {
 type ShortLink struct {
 	Short       string     `json:"short,omitempty"`
 	Original    string     `json:"original,omitempty"`
-	Owner       string     `json:"owner,omitempty"`
+	Owner       *User      `json:"owner,omitempty"`
 	DateCreated time.Time  `json:"date_created"`
 	DateExpired *time.Time `json:"date_expired,omitempty"`
 }
@@ -29,14 +29,13 @@ type ShortLink struct {
 type Role = int
 
 const (
-	RoleAdmin Role = iota
-	RoleUser
+	RoleUser Role = iota
+	RoleAdmin
 )
 
 type User struct {
 	Username string
 	Email    string
-	Password string
 	Role     Role
 }
 
@@ -47,10 +46,10 @@ func (l *Linker) GetLink(short string) *ShortLink {
 	return l.Links[short]
 }
 
-func (l *Linker) NewLink(original string, opts ...func(*ShortLink)) ShortLink {
+func NewLink(original string, opts ...func(*ShortLink)) ShortLink {
 	link := ShortLink{
 		Original:    original,
-		DateCreated: time.Now(),
+		DateCreated: time.Now().UTC(),
 	}
 
 	for _, f := range opts {
@@ -77,7 +76,7 @@ func WithRandomShort() func(*ShortLink) {
 
 func WithOwner(owner User) func(*ShortLink) {
 	return func(link *ShortLink) {
-		link.Owner = owner.Username
+		link.Owner = &owner
 	}
 }
 
@@ -129,7 +128,6 @@ func (l *Linker) ReloadLinks() {
 		"admin": {
 			Username: "admin",
 			Email:    "admin@mail.com",
-			Password: "root",
 			Role:     RoleAdmin,
 		},
 	}

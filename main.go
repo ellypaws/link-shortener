@@ -1,22 +1,28 @@
 package main
 
 import (
+	"context"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"link-shortener/db"
 	"link-shortener/links"
 	"net/http"
 	"path/filepath"
 )
 
 type App struct {
-	Links *links.Linker
-	echo  *echo.Echo
+	echo *echo.Echo
+	db   *db.Sqlite
 }
 
 func NewApp() *App {
+	database, err := db.New(context.Background())
+	if err != nil {
+		panic(err)
+	}
 	return &App{
-		Links: links.NewLinker(),
-		echo:  echo.New(),
+		echo: echo.New(),
+		db:   database,
 	}
 }
 
@@ -24,7 +30,7 @@ func main() {
 	app := NewApp()
 
 	app.echo.Use(middleware.Logger())
-	app.echo.Use(app.storeLinker)
+	app.echo.Use(app.storeDatabase)
 
 	// set cors
 	app.echo.Use(middleware.CORSWithConfig(middleware.CORSConfig{
@@ -39,9 +45,9 @@ func main() {
 	app.echo.Logger.Fatal(app.echo.Start(":1323"))
 }
 
-func (app App) storeLinker(next echo.HandlerFunc) echo.HandlerFunc {
+func (app App) storeDatabase(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		c.Set("linker", app.Links)
+		c.Set("database", app.db)
 		return next(c)
 	}
 }
@@ -64,12 +70,12 @@ func retrieveLink(c echo.Context) error {
 	}
 
 	short := c.Param("short")
-	linker, ok := c.Get("linker").(*links.Linker)
+	database, ok := c.Get("database").(*db.Sqlite)
 	if !ok {
-		return c.String(500, "linker not found")
+		return c.String(500, "database not found")
 	}
-	link := linker.GetLink(short)
-	if link == nil {
+	link, err := database.SelectLink(short)
+	if err != nil {
 		return c.String(404, "Link not found")
 	}
 
@@ -82,15 +88,15 @@ func shortenLink(c echo.Context) error {
 		Short:    c.FormValue("short"),
 	}
 
-	linker, ok := c.Get("linker").(*links.Linker)
+	database, ok := c.Get("database").(*db.Sqlite)
 	if !ok {
-		return c.String(500, "linker not found")
+		return c.String(500, "database not found")
 	}
 
-	short := linker.NewLink(link.Original, links.WithShort(link.Short))
-	err := linker.AddLink(short)
+	short := links.NewLink(link.Original, links.WithShort(link.Short))
+	err := database.UpsertLink(&short)
 	if err != nil {
-		return c.String(500, "Failed to add link")
+		return c.String(500, "Failed to add link"+err.Error())
 	}
 
 	return c.JSON(200, link)
